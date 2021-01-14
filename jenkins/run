@@ -7,8 +7,6 @@
 # It also sets the admin password to ${JENKINS_PASSWORD}.
 #
 
-JENKINS_PASSWORD=admin
-
 default_version=$(cat /tmp/release.version)
 JENKINS_SLAVE_IMAGE_TAG=${JENKINS_SLAVE_IMAGE_TAG:-${default_version}}
 
@@ -16,6 +14,9 @@ source /usr/local/bin/jenkins-common.sh
 source /usr/local/bin/kube-slave-common.sh
 
 shopt -s dotglob
+
+echo "CUSTOM RUN SCRIPT..."
+JENKINS_PASSWORD=admin
 
 function update_admin_password() {
   # get random admin dir

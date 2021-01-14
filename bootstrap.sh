@@ -7,7 +7,7 @@ function log {
 }
 
 function build_jenkins_image {
-  docker build -t quay.io/elostech/rb-jenkins:latest .
+  docker build -t quay.io/elostech/rb-jenkins:latest jenkins/
 }
 
 function push_jenkins_image {
@@ -30,12 +30,29 @@ function deploy_jenkins {
 
   oc new-app \
     --name jenkins \
-    -f jenkins-template.yaml
+    -f jenkins/jenkins-template.yaml
     #--docker-image=openshift/jenkins-2-centos7
 
   #oc expose svc jenkins
 
   # INFO: Completed initialization
+
+  for i in $(seq 1 100); do
+    oc get pod --no-headers=true | grep -v deploy | grep '1/1'
+    echo "Waiting till jenkins pod is ready.."
+    sleep 10
+  done
+}
+
+function install_plugins {
+  POD_NAME=$(oc get pod --no-headers=true | grep -v deploy | awk '{ print $1 }')
+
+  oc exec $POD_NAME -- curl -L https://raw.githubusercontent.com/hgomez/devops-incubator/master/forge-tricks/batch-install-jenkins-plugins.sh -o /tmp/batch-install-jenkins-plugins.sh
+
+  oc exec $POD_NAME -- chmod +x /tmp/batch-install-jenkins-plugins.sh
+
+  oc exec $POD_NAME -- /tmp/batch-install-jenkins-plugins.sh --plugins /tmp/plugins.txt --plugindir /var/lib/jenkins/plugins/
+
 }
 
 function create_pipeline_job {
@@ -55,11 +72,14 @@ function cleanup {
   done
 }
 
-#build_jenkins_image
-#push_jenkins_image
+build_jenkins_image
+push_jenkins_image
+
+sleep 10
 
 cleanup
 create_project
 deploy_jenkins
 oc get pod -w
+install_plugins
 # create_pipeline_job
