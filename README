@@ -1,0 +1,25 @@
+# Prereq
+
+podman login registry.redhat.io
+...
+
+cat ${XDG_RUNTIME_DIR}/containers/auth.json
+
+
+
+# AWS
+
+URL: https://fwd.aws/e4r9x
+
+
+
+
+-------------------------------
+
+https://docs.openshift.com/container-platform/4.6/installing/installing_aws/installing-aws-default.html
+
+- download installer...
+
+- download pull secret
+
+

@@ -30,7 +30,9 @@ function deploy_jenkins {
 
   oc new-app \
     --name jenkins \
-    -f jenkins/jenkins-template.yaml
+    --template jenkins-persistent
+    #-f jenkins/jenkins-template-persistent.yaml
+    #-f jenkins/jenkins-template.yaml
     #--docker-image=openshift/jenkins-2-centos7
 
   #oc expose svc jenkins
@@ -38,7 +40,7 @@ function deploy_jenkins {
   # INFO: Completed initialization
 
   for i in $(seq 1 100); do
-    oc get pod --no-headers=true | grep -v deploy | grep '1/1'
+    oc get pod --no-headers=true | grep -v deploy | grep '1/1' && break
     echo "Waiting till jenkins pod is ready.."
     sleep 10
   done
@@ -51,17 +53,26 @@ function install_plugins {
 
   oc exec $POD_NAME -- chmod +x /tmp/batch-install-jenkins-plugins.sh
 
+  oc exec $POD_NAME -- sed -i 's@updates.jenkins-ci.org/stable@updates.jenkins.io@' /tmp/batch-install-jenkins-plugins.sh
+
   oc exec $POD_NAME -- /tmp/batch-install-jenkins-plugins.sh --plugins /tmp/plugins.txt --plugindir /var/lib/jenkins/plugins/
 
 }
 
-function create_pipeline_job {
-  oc apply -f pipeline-buildconfig.yaml
-  oc start-build nodejs-sample-pipeline
+function deploy_redis {
+  log "Deploying redis"
+
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm install rb-redis \
+    --namespace $PROJECT_NAME \
+    -f redis/values.yaml \
+    redis/
 }
 
 function cleanup {
   log "Cleanup..."
+
+  helm uninstall rb-redis
 
   oc delete project $PROJECT_NAME
 
@@ -72,14 +83,14 @@ function cleanup {
   done
 }
 
-build_jenkins_image
-push_jenkins_image
+#build_jenkins_image
+#push_jenkins_image
 
-sleep 10
+#sleep 10
 
-cleanup
-create_project
-deploy_jenkins
-oc get pod -w
-install_plugins
-# create_pipeline_job
+#cleanup
+#create_project
+#deploy_jenkins
+#install_plugins
+
+deploy_redis

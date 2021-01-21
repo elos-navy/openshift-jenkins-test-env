@@ -1,3 +1,4 @@
 envinject
 envinject-api
+structs
 logstash
